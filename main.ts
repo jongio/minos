@@ -28,12 +28,6 @@ interface InfoSprite {
     sprite: Sprite
 }   // interface InfoSprite
 
-interface InfoSprite1 {
-    img: Image
-    sprite: Sprite
-}   // interface InfoSprite
-
-
 interface Pixel {
     x: number
     y: number
