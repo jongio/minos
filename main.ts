@@ -320,8 +320,30 @@ controller.B.onEvent(ControllerButtonEvent.Pressed, function () {
             startSettings()
             break
 
+
+        /*
+            if we have a stashed poly then put in temp variable
+            put current piece in stash
+            
+            if have temp variable
+                make temp variable stashed poly the current poly
+            else
+                use next poly
+
+            if we have a stashed poly, then put current poly in stashed
+
+        */
         case GameMode.Main:
-            updateStashedPolySprite();
+            setStashedPoly()
+            //console.log(currPoly.index);
+            //currPoly.index;
+            //let stashedPolyIndex = stashedPoly.index;
+            //let currPolyIndex = currPoly.index;
+
+            //currPoly = null;
+            //startNextPoly(stashedPolyIndex);
+            //updateStashedPolySprite(currPolyIndex);
+            //setStashedPoly()
             break
     }   // switch (gameMode)
 })  // controller.B.onEvent()
@@ -802,7 +824,7 @@ function initGameSprites(): void {
     img = createCanvas(GRID_SIZE_NEXT_POLY, GRID_SIZE_NEXT_POLY)
     nextPoly = {
         img: img,
-        index: 0,
+        index: Math.randomRange(0, gameShapes.length - 1),
         sprite: null
     }
     nextPoly.sprite = sprites.create(nextPoly.img, 0)
@@ -827,7 +849,7 @@ function initGameSprites(): void {
     img = createCanvas(GRID_SIZE_NEXT_POLY, GRID_SIZE_NEXT_POLY)
     stashedPoly = {
         img: img,
-        index: 0,
+        index: -1,
         sprite: null
     }
     stashedPoly.sprite = sprites.create(stashedPoly.img, 0)
@@ -837,17 +859,17 @@ function initGameSprites(): void {
     stashedPoly.sprite.setFlag(SpriteFlag.Ghost, true)
     
     
-    img = image.create(42, 14)
-    img.print(TEXT_STASHED_POLY[0], 0, 0, Color.Yellow, image.font5)
-    img.print(TEXT_STASHED_POLY[1], 0, 7, Color.Yellow, image.font5)
-    stashedPolyLabel = {
-        img: img,
-        sprite: null
-    }
-    stashedPolyLabel.sprite = sprites.create(stashedPolyLabel.img, 0)
-    stashedPolyLabel.sprite.x = stashedPoly.sprite.x             
-    stashedPolyLabel.sprite.y = stashedPoly.sprite.y - 50
-    stashedPolyLabel.sprite.setFlag(SpriteFlag.Ghost, true)
+    // img = image.create(42, 14)
+    // img.print(TEXT_STASHED_POLY[0], 0, 0, Color.Yellow, image.font5)
+    // img.print(TEXT_STASHED_POLY[1], 0, 7, Color.Yellow, image.font5)
+    // stashedPolyLabel = {
+    //     img: img,
+    //     sprite: null
+    // }
+    // stashedPolyLabel.sprite = sprites.create(stashedPolyLabel.img, 0)
+    // stashedPolyLabel.sprite.x = stashedPoly.sprite.x             
+    // stashedPolyLabel.sprite.y = stashedPoly.sprite.y - 50
+    // stashedPolyLabel.sprite.setFlag(SpriteFlag.Ghost, true)
 
 }   // initGameSprites()
 
@@ -934,21 +956,52 @@ function shiftLines(): void {
  */
 function startNextPoly(): void {
     autoDrop = false
+
     if (currPoly) {
+        console.log('before setpoly')
         setPoly(currPoly)
         clearLines()
-    } else {
-        // Start of game
-        // Prime nextPoly
-        nextPoly.index = Math.randomRange(0, gameShapes.length - 1)
-    }   // if (currPoly)
-    let newPoly: Polyomino = gameShapes[nextPoly.index]
+    } 
+    
+    setCurrPoly(nextPoly.index)
+    
+    nextPoly.index = Math.randomRange(0, gameShapes.length - 1)
+    // If we're clearing lines, update the Next Poly sprite later
+    if (gameMode !== GameMode.Animating) {
+        updateNextPolySprite()
+    }   // if (gameMode !== GameMode.Animating)
+    
+}   // startNextPoly()
+
+
+/**
+ * Place the next polyomino in the starting position.
+ */
+function setStashedPoly(): void {
+    autoDrop = false
+
+    let currentStashedPolyIndex = stashedPoly.index
+    stashedPoly.index = currPoly.index
+    updateStashedPolySprite()
+
+    if(currentStashedPolyIndex < 0){
+        currPoly = null
+        startNextPoly()
+    }else{
+        setCurrPoly(currentStashedPolyIndex);
+        //setPoly(currPoly)
+    } 
+    
+}   // startNextPoly()
+
+function setCurrPoly(index:number){
+    let newPoly: Polyomino = gameShapes[index]
     currPoly = {
         change: {
             column: 0,
             row: 0
         },
-        index: nextPoly.index,
+        index: index,
         location: {
             column: Math.floor((COLUMNS - newPoly.blocks[0][0].length) / 2),
             row: 0 - newPoly.blocks[0].length
@@ -956,12 +1009,7 @@ function startNextPoly(): void {
         nextDrop: 0,
         orientation: 0
     }
-    nextPoly.index = Math.randomRange(0, gameShapes.length - 1)
-    // If we're clearing lines, update the Next Poly sprite later
-    if (gameMode !== GameMode.Animating) {
-        updateNextPolySprite()
-    }   // if (gameMode !== GameMode.Animating)
-}   // startNextPoly()
+}
 
 /**
  * Update the main grid sprite.
@@ -1007,7 +1055,8 @@ function updateStashedPolySprite(): void {
     stashedPoly.img.fill(COLOR_BG)
     // Draw grid when debugging.
     //drawGrid(stashedPolyImage, GRID_SIZE_NEXT_POLY, GRID_SIZE_NEXT_POLY, Color.Wine)
-    let poly: Polyomino = gameShapes[Math.randomRange(0, gameShapes.length - 1)]
+    //let poly: Polyomino = gameShapes[Math.randomRange(0, gameShapes.length - 1)]
+    let poly: Polyomino = gameShapes[stashedPoly.index]
     drawPoly(stashedPoly.img, poly,
         Math.floor((GRID_SIZE_NEXT_POLY - poly.blocks[0].length) / 2),
         Math.floor((GRID_SIZE_NEXT_POLY - poly.blocks[0][0].length) / 2))
